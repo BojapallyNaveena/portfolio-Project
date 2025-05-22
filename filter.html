@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Product Page</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f2f2f2;
+    }
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 20px;
+      display: flex;
+      gap: 20px;
+    }
+    .filters {
+      width: 250px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .products {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .product {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .product h3 {
+      font-size: 18px;
+      margin: 10px 0 5px;
+    }
+    .product p {
+      margin: 5px 0;
+    }
+    .sort {
+      margin-bottom: 20px;
+    }
+    select, input {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0 15px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Filters Sidebar -->
+  <div class="filters">
+    <h2>Filter</h2>
+
+    <label>Category</label>
+    <select id="categoryFilter">
+      <option value="all">All</option>
+      <option value="Electronics">Electronics</option>
+      <option value="Clothing">Clothing</option>
+      <option value="Books">Books</option>
+    </select>
+
+    <label>Price Range</label>
+    <input type="number" id="minPrice" placeholder="Min Price">
+    <input type="number" id="maxPrice" placeholder="Max Price">
+
+    <label>Sort By</label>
+    <select id="sortBy">
+      <option value="ratingHigh">Rating: High to Low</option>
+      <option value="ratingLow">Rating: Low to High</option>
+      <option value="priceLow">Price: Low to High</option>
+      <option value="priceHigh">Price: High to Low</option>
+    </select>
+
+    <button onclick="applyFilters()">Apply Filters</button>
+  </div>
+
+  <!-- Product List -->
+  <div class="product-section">
+    <div class="sort"></div>
+    <div class="products" id="productGrid"></div>
+  </div>
+</div>
+
+<script>
+  const products = [
+    { name: "Smartphone", category: "Electronics", price: 499, rating: 4.5 },
+    { name: "Laptop", category: "Electronics", price: 999, rating: 4.7 },
+    { name: "Jeans", category: "Clothing", price: 40, rating: 4.2 },
+    { name: "T-Shirt", category: "Clothing", price: 20, rating: 4.0 },
+    { name: "Novel", category: "Books", price: 15, rating: 4.8 },
+    { name: "Science Book", category: "Books", price: 35, rating: 4.6 },
+    { name: "Headphones", category: "Electronics", price: 79, rating: 4.4 },
+    { name: "Jacket", category: "Clothing", price: 120, rating: 4.3 }
+  ];
+
+  function displayProducts(filtered) {
+    const grid = document.getElementById("productGrid");
+    grid.innerHTML = "";
+    if (filtered.length === 0) {
+      grid.innerHTML = "<p>No products match your filters.</p>";
+      return;
+    }
+    filtered.forEach(p => {
+      grid.innerHTML += `
+        <div class="product">
+          <h3>${p.name}</h3>
+          <p>Category: ${p.category}</p>
+          <p>Price: $${p.price}</p>
+          <p>Rating: ⭐ ${p.rating}</p>
+        </div>`;
+    });
+  }
+
+  function applyFilters() {
+    let category = document.getElementById("categoryFilter").value;
+    let minPrice = parseFloat(document.getElementById("minPrice").value) || 0;
+    let maxPrice = parseFloat(document.getElementById("maxPrice").value) || Infinity;
+    let sortBy = document.getElementById("sortBy").value;
+
+    let filtered = products.filter(p => 
+      (category === "all" || p.category === category) &&
+      p.price >= minPrice &&
+      p.price <= maxPrice
+    );
+
+    // Sorting logic
+    switch (sortBy) {
+      case "ratingHigh":
+        filtered.sort((a, b) => b.rating - a.rating);
+        break;
+      case "ratingLow":
+        filtered.sort((a, b) => a.rating - b.rating);
+        break;
+      case "priceLow":
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case "priceHigh":
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+    }
+
+    displayProducts(filtered);
+  }
+
+  // Initial display
+  window.onload = () => {
+    displayProducts(products);
+  }
+</script>
+
+</body>
+</html>
