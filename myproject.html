@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BeautyProducts - E-Commerce</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-pink-50">
+
+<!-- LOGIN PAGE -->
+<div id="login-page" class="min-h-screen flex flex-col items-center justify-center bg-cover bg-center" style="background-image: url('https://thumbs.dreamstime.com/b/freehand-sketch-beauty-essentials-cosmetics-tools-products-clean-background-inspiration-design-captivating-371687520.jpg');">
+  <div class="bg-white bg-opacity-90 p-8 rounded shadow-lg w-96">
+    <h2 class="text-2xl font-bold text-center text-pink-700 mb-4">Welcome to BeautyProducts</h2>
+    <input id="username" type="text" placeholder="Username" class="w-full p-2 mb-4 border rounded" />
+    <input id="password" type="password" placeholder="Password" class="w-full p-2 mb-4 border rounded" />
+    <button onclick="login()" class="w-full bg-pink-600 text-white p-2 rounded hover:bg-pink-700">Login</button>
+  </div>
+</div>
+
+<!-- MAIN PAGE -->
+<div id="main-page" class="hidden flex flex-col min-h-screen">
+
+  <!-- HEADER -->
+  <header class="bg-pink-600 text-white p-4 flex justify-between items-center">
+    <h1 class="text-2xl font-bold">BeautyProducts</h1>
+    <nav class="space-x-4">
+      <button onclick="showSection('products')" class="hover:underline">Products</button>
+      <button onclick="showSection('wishlist')" class="hover:underline">Wishlist</button>
+      <button onclick="showSection('cart')" class="hover:underline">Cart (<span id="cart-count">0</span>)</button>
+      <button onclick="showSection('checkout')" class="hover:underline">Checkout</button>
+      <button onclick="logout()" class="ml-4 bg-pink-800 px-3 py-1 rounded hover:bg-pink-900">Logout</button>
+    </nav>
+  </header>
+
+  <!-- SORTING -->
+  <div class="p-4 flex items-center space-x-4 bg-white shadow">
+    <label for="sort-select" class="font-semibold text-pink-700">Sort by:</label>
+    <select id="sort-select" class="border rounded p-1" onchange="sortProducts()">
+      <option value="default">Default</option>
+      <option value="price-asc">Price: Low to High</option>
+      <option value="price-desc">Price: High to Low</option>
+    </select>
+  </div>
+
+  <!-- PRODUCT LIST -->
+  <section id="products-section" class="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 bg-pink-50 flex-grow overflow-auto"></section>
+
+  <!-- WISHLIST -->
+  <section id="wishlist-section" class="hidden p-4 bg-pink-50 flex-grow overflow-auto">
+    <h2 class="text-xl font-bold mb-4">Wishlist</h2>
+    <div id="wishlist-items" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
+  </section>
+
+  <!-- CART -->
+  <section id="cart-section" class="hidden p-4 bg-pink-50 flex-grow overflow-auto">
+    <h2 class="text-xl font-bold mb-4">Your Cart</h2>
+    <div id="cart-items" class="space-y-4"></div>
+    <p id="cart-total" class="font-semibold mt-4"></p>
+  </section>
+
+  <!-- CHECKOUT -->
+  <section id="checkout-section" class="hidden p-4 max-w-md mx-auto bg-pink-50 flex-grow overflow-auto">
+    <h2 class="text-xl font-bold mb-4">Checkout</h2>
+    <form id="checkout-form" class="space-y-4 bg-white p-6 rounded shadow">
+      <input type="text" placeholder="Full Name" required class="w-full border p-2 rounded" />
+      <input type="text" placeholder="Delivery Address" required class="w-full border p-2 rounded" />
+      <input type="text" placeholder="City" required class="w-full border p-2 rounded" />
+      <input type="text" placeholder="State" required class="w-full border p-2 rounded" />
+      <select id="delivery-location" required class="w-full border p-2 rounded">
+        <option value="">Select Delivery Location</option>
+        <option value="Local">Local</option>
+        <option value="Within State">Within State</option>
+        <option value="Out of State">Out of State</option>
+        <option value="International">International</option>
+      </select>
+      <input type="text" placeholder="Card Number" required class="w-full border p-2 rounded" maxlength="16" />
+      <button type="submit" class="bg-green-600 w-full text-white p-2 rounded hover:bg-green-700">Place Order</button>
+    </form>
+    <p id="delivery-time" class="mt-4 text-green-700 font-semibold"></p>
+  </section>
+
+</div>
+
+<script>
+  const loginPage = document.getElementById('login-page');
+  const mainPage = document.getElementById('main-page');
+
+  function login() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if (username && password) {
+      loginPage.classList.add('hidden');
+      mainPage.classList.remove('hidden');
+      loadProducts();
+      showSection('products');
+    } else {
+      alert('Please enter username and password');
+    }
+  }
+
+  function logout() {
+    mainPage.classList.add('hidden');
+    loginPage.classList.remove('hidden');
+    cart.length = 0;
+    wishlist.length = 0;
+    updateCart();
+    renderWishlist();
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('delivery-time').textContent = '';
+    document.getElementById('checkout-form').reset();
+  }
+
+  const productList = document.getElementById('products-section');
+  const cartItems = document.getElementById('cart-items');
+  const wishlistItems = document.getElementById('wishlist-items');
+  const cartCount = document.getElementById('cart-count');
+  const cart = [];
+  const wishlist = [];
+
+  const productData = [
+    { id:1, name:"Classic Red Lipstick", image:"https://images.unsplash.com/photo-1645961359170-c01fa306aa6b?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cmVkJTIwbGlwc3RpY2t8ZW58MHx8MHx8fDA%3D", price:15.99 },
+    { id:2, name:"Hydrating Sunscreen SPF50", image:"https://images.unsplash.com/photo-1598662972299-5408ddb8a3dc?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHN1bnNjcmVlbnxlbnwwfHwwfHx8MA%3D%3D", price:19.99 },
+    { id:3, name:"Volumizing Mascara", image:"https://i.pinimg.com/736x/67/a3/19/67a319bd526892f905c6b679c9088067.jpg", price:13.49 },
+    { id:4, name:"Matte Foundation", image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQFwxSua6RXLb6YT11VG-Lpk27pvP6RPTDdmVkLBdYq3fsmVfiMBVbBMpEx-yg01_VJ8fk&usqp=CAU", price:25.00 },
+    { id:5, name:"Rose Blush Powder", image:"https://plus.unsplash.com/premium_photo-1726750867977-44b04195ce08?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8Ymx1c2glMjBtYWtldXB8ZW58MHx8MHx8fDA%3D", price:14.49 },
+    { id:6, name:"Silky Hair Serum", image:"https://cdn.tirabeauty.com/v2/billowing-snowflake-434234/tira-p/wrkr/products/pictures/item/free/resize-w:540/streax-professional/COMBO_240119113553-1C7/0/-GPJZN1kAE-1109134_combo_4-1.jpg", price:18.75 },
+    { id:7, name:"Eyeliner Pencil", image:"https://cdn.tirabeauty.com/v2/billowing-snowflake-434234/tira-p/wrkr/products/pictures/item/free/resize-w:540/insight-cosmetics/COMBO_240527114206-FBO/0/qjJNY_xjVD-973962_Combo_31-1.jpg", price:12.00 },
+    { id:8, name:"Nail Polish Set", image:"https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcRPJjH1R2jPqwv02AQUieizfPb-UyXX8R579E62M5W_NBNneTAl1nzhLn9Egz-fRqUHJEM3whzKmZawdzEHk7VnBZ8xEqOL78AVfWedxLB1aYuBBFGOqUVDQXJCQ7hH&usqp=CAc", price:22.99 },
+    { id:9, name:"Face Cleanser", image:"https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcQD8mwEXjrGejqVvm1j7SY4e_buY-CeXJJ59XnximyspHRTrXJM3fwgGNGYs6kHbx03CyqARIpvTqxJE-wCqPL_Q8uOmGwAbhWuqPTQCHbsGZWgloiIVMlUaw&usqp=CAc", price:16.50 },
+    { id:10, name:"Makeup Brushes Set", image:"https://encrypted-tbn1.gstatic.com/shopping?q=tbn:ANd9GcR_naxEg9WIgpZxAIfqB-uH7GQY8B-PqgYBKNQM5nGQaP_iW24E5YBwtGvjKF-5AArmqk6tGlxAYiq-pfpUb611831tTGA9MXf4jA20IP0zYG5xUemP28T1NeA1Dzjv-dGVt77naJNJgA&usqp=CAc", price:2000 },
+    { id:11,name:"Face Scrub",image:"https://encrypted-tbn2.gstatic.com/shopping?q=tbn:ANd9GcTXWnIuwYkEDTva02rBoEkEdAdz2Xvk1jhP-uFX4-Zse0ty4k4ybX09Fpx-JPGkMpeqnTqpvK_NT1rHGKL-91YUfaRIDngffWHVtNaBCYw",price:130},
+    { id:12,name:"Eye Cream",image:"https://cdn.tirabeauty.com/v2/billowing-snowflake-434234/tira-p/wrkr/products/pictures/item/free/original/1049456/bWIVAnnMV-1049456_1.jpg?dpr=1",price:420},
+    { id:13,name:"Hair Mask",image:"https://encrypted-tbn1.gstatic.com/shopping?q=tbn:ANd9GcRdL6F4Pkq7_gYpMX5yvP3J9sQd_t_PEImbAVBG27xnlruUvusXbfp7nzvtMwsNLdH9IGBkFJPBlXLwXH8Hj-Z-E0leGAQyybEMf-UeS8JvcJLgF1NnqrUxa4KaKXd_zCJpS_Bwiw&usqp=CAc",price:500},
+    { id:14,name:"Body Scrub",image:"https://www.aminu.life/cdn/shop/files/Product_Carton_dcb9bd15-a35f-4535-aaa3-c806814d8910_720x.jpg?v=1744111979",price:350},
+    { id:15,name:"Lip Gloss",image:"https://images.meesho.com/images/products/432805517/epkan_1200.jpg",price:180},
+    { id:16,name:"Skin care",image:"https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcQUUKMITXlm3tuD4hAwBffdTZ_QljvG7HPX_BY804GQNLl2Y4trf2VsX8qSiN5R5zJa06nYetqGa4AXeXOGFHFqic6BfXb4m9ZgMx7jXgjRWP7z-Fy0_n3uZA",price:800},
+    { id:17,name:"Fragnance",image:"https://encrypted-tbn1.gstatic.com/shopping?q=tbn:ANd9GcSJTi7EbgQ1v2w3RcDzHP3mg3MgBe6ZA3o-yQYrQ-FSC9xBkTLy1Sh4AArO4ZCBbNtgt4kfCMvMr2CG71wGAi2Fusdx7FxpFyTSCQ0_eZpgDM_SV47KsG5FY6cLKjVC1LW4qMml5w9L&usqp=CAc",price:600},
+    {id:18,name:"Hair dryer",image:"https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcSEV7YBFyoCE1iaWyDjHO1jw0jzZAmVeGfRWw1TetJk1AOnFchETYVxg-vwi_R38HP_Z9SH7vp32oVNNbOyC38xjNXa46npVb5eQ53NThx_&usqp=CAc",price:2000},
+    {id:19,name:"intenseGaze Kajal",image:"https://m.media-amazon.com/images/I/71WwwyIjMcL.jpg",price:350},
+    {id:20,name:"GlowMatte Foundation",image:"https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcQ9NlUUf8TrKx6ieNHmxbr0RnrNvtRkhx7cQZMRtgdBEG-vIaEITkBn7n3tYHIdvLBHnfcwhG_Y-O7sqZGDb0bcO6W7tNbUSnTtVkz-j332iRruDommHnS5KUKlZ6mO5ckliauP8tU&usqp=CAc",price:1000},
+    {id:21,name:"PlushKiss Lip Balm",image:"https://encrypted-tbn1.gstatic.com/shopping?q=tbn:ANd9GcQHLWKEdSNkuZotAcS6R6aIgeWb8Xss9IVq-E2VMA1oO3v5_ai5B6T9pR3DzWmLGzh04re8gXJLuPE1VgUM2X9K2ScCz2OhjnJY9YPP-fi1vKGrMDIvs5aYTB-bma71&usqp=CAc",price:600},
+    {id:22,name:"SilkyStrands Shampoo",image:"https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcRrLd_lFvxibuf8SzFY_XAB-sQY48UUurHzjyPvPDZiZseiue7GMg7PttEjvZccZ4jZcYIxb4V5CIp3sbjmzlisF1vSdm8Zq2ETiCM8LODGgALEIQcKdjwbsKDmhbDJHiUgy5D4JA&usqp=CAc",price:1350},
+    {id:23,name:"RoseBliss Shower Gel",image:"https://lovel.care/cdn/shop/files/banner_3.png?v=1735650275&width=3840",price:700},
+    {id:24,name:"SilkTouch",image:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSl-iPbN2d_Neq9cLJUEjBAyV0sI0O_lFY7-A&s",price:118},
+    {id:25,name:"Fruit Facial kit",image:"https://m.media-amazon.com/images/I/51rWlHHxK4L.SX300_SY300_QL70_FMwebp.jpg",price:570},
+    {id:26,name:"Pedicure Kit",image:"https://cdn.tirabeauty.com/v2/billowing-snowflake-434234/tira-p/wrkr/products/pictures/item/free/resize-w:540/1136876/gJNpb1qlH0M-1136876_1.jpg",price:390},
+    {id:27,name:"Threading Thread Roll",image:"https://m.media-amazon.com/images/I/512AcEF71gL.jpg",price:260},
+    {id:28,name:"Hair Spa Cream",image:"https://cdn.tirabeauty.com/v2/billowing-snowflake-434234/tira-p/wrkr/products/pictures/item/free/resize-w:540/1130971/1W3I6uAfUs-1130971_1.jpg",price:499},
+    {id:29,name:"Cucumber Toner",image:"https://m.media-amazon.com/images/I/61J0UmB6HQL.AC_UF1000,1000_QL80.jpg",price:3120},
+    {id:30,name:"Facial Steamer",image:"https://m.media-amazon.com/images/I/41F4xtAmQ0L.SX300_SY300_QL70_FMwebp.jpg",price:1499}   
+   ];
+
+  // Render products
+  function loadProducts() {
+    productList.innerHTML = '';
+    productData.forEach(product => {
+      const div = document.createElement('div');
+      div.className = 'bg-white p-4 rounded shadow flex flex-col items-center';
+      div.innerHTML = `
+        <img src="${product.image}" alt="${product.name}" class="h-48 w-full object-cover rounded mb-2" loading="lazy" />
+        <h3 class="text-lg font-semibold">${product.name}</h3>
+        <p class="text-pink-700 font-bold mb-2">$${product.price}</p>
+        <div class="flex space-x-2">
+          <button onclick="addToWishlist(${product.id})" class="bg-pink-600 text-white px-3 py-1 rounded hover:bg-pink-700">Add to Wishlist</button>
+          <button onclick="addToCart(${product.id})" class="bg-pink-600 text-white px-3 py-1 rounded hover:bg-pink-700">Add to Cart</button>
+          <button onclick="buyNow(${product.id})" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Buy Now</button>
+        </div>
+      `;
+      productList.appendChild(div);
+    });
+  }
+
+  function addToWishlist(id) {
+    const product = productData.find(p => p.id === id);
+    if (!wishlist.find(p => p.id === id)) {
+      wishlist.push(product);
+      alert(`Added "${product.name}" to wishlist.`);
+      renderWishlist();
+    } else {
+      alert(`${product.name} is already in wishlist.`);
+    }
+  }
+
+  function renderWishlist() {
+    wishlistItems.innerHTML = '';
+    wishlist.forEach(product => {
+      const div = document.createElement('div');
+      div.className = 'bg-white p-4 rounded shadow flex flex-col items-center';
+      div.innerHTML = `
+        <img src="${product.image}" alt="${product.name}" class="h-32 w-32 object-cover rounded mb-2" loading="lazy" />
+        <h3 class="text-lg font-semibold">${product.name}</h3>
+        <p class="text-pink-700 font-bold">$${product.price}</p>
+      `;
+      wishlistItems.appendChild(div);
+    });
+  }
+
+  function addToCart(id) {
+    const product = productData.find(p => p.id === id);
+    cart.push(product);
+    alert(`Added "${product.name}" to cart.`);
+    updateCart();
+  }
+
+  function updateCart() {
+    cartItems.innerHTML = '';
+    let total = 0;
+    cart.forEach((product, index) => {
+      total += parseFloat(product.price);
+      const div = document.createElement('div');
+      div.className = 'flex items-center justify-between bg-white p-2 rounded shadow';
+
+      div.innerHTML = `
+        <div class="flex items-center space-x-4">
+          <img src="${product.image}" alt="${product.name}" class="h-16 w-16 object-cover rounded" loading="lazy" />
+          <div>
+            <h4 class="font-semibold">${product.name}</h4>
+            <p class="text-pink-700 font-bold">$${product.price}</p>
+          </div>
+        </div>
+        <button onclick="removeFromCart(${index})" class="text-red-600 hover:text-red-800 font-bold">Remove</button>
+      `;
+      cartItems.appendChild(div);
+    });
+    cartCount.textContent = cart.length;
+    document.getElementById('cart-total').textContent = `Total: $${total.toFixed(2)}`;
+  }
+
+  function removeFromCart(index) {
+    cart.splice(index, 1);
+    updateCart();
+  }
+
+  function buyNow(id) {
+    const product = productData.find(p => p.id === id);
+    alert(`Buying "${product.name}" now!`);
+    cart.length = 0; // empty cart before adding
+    cart.push(product);
+    updateCart();
+    showSection('checkout');
+  }
+
+  function showSection(section) {
+    const sections = ['products', 'wishlist', 'cart', 'checkout'];
+    sections.forEach(sec => {
+      const el = document.getElementById(`${sec}-section`);
+      if (el) el.classList.toggle('hidden', sec !== section);
+    });
+  }
+
+  function sortProducts() {
+    const select = document.getElementById('sort-select');
+    let sorted = [...productData];
+    if (select.value === 'price-asc') {
+      sorted.sort((a,b) => parseFloat(a.price) - parseFloat(b.price));
+    } else if (select.value === 'price-desc') {
+      sorted.sort((a,b) => parseFloat(b.price) - parseFloat(a.price));
+    } else {
+      sorted = [...productData];
+    }
+    productList.innerHTML = '';
+    sorted.forEach(product => {
+      const div = document.createElement('div');
+      div.className = 'bg-white p-4 rounded shadow flex flex-col items-center';
+      div.innerHTML = `
+        <img src="${product.image}" alt="${product.name}" class="h-48 w-full object-cover rounded mb-2" loading="lazy" />
+        <h3 class="text-lg font-semibold">${product.name}</h3>
+        <p class="text-pink-700 font-bold mb-2">$${product.price}</p>
+        <div class="flex space-x-2">
+          <button onclick="addToWishlist(${product.id})" class="bg-pink-600 text-white px-3 py-1 rounded hover:bg-pink-700">Add to Wishlist</button>
+          <button onclick="addToCart(${product.id})" class="bg-pink-600 text-white px-3 py-1 rounded hover:bg-pink-700">Add to Cart</button>
+          <button onclick="buyNow(${product.id})" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Buy Now</button>
+        </div>
+      `;
+      productList.appendChild(div);
+    });
+  }
+
+  // Checkout form
+  document.getElementById('checkout-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const location = document.getElementById('delivery-location').value;
+    let deliveryTime = '';
+
+    switch(location) {
+      case 'Local':
+        deliveryTime = 'Delivery in 1-2 days.';
+        break;
+      case 'Within State':
+        deliveryTime = 'Delivery in 3-5 days.';
+        break;
+      case 'Out of State':
+        deliveryTime = 'Delivery in 5-7 days.';
+        break;
+      case 'International':
+        deliveryTime = 'Delivery in 10-15 days.';
+        break;
+      default:
+        alert('Please select a delivery location.');
+        return;
+    }
+
+    alert('Order placed successfully!');
+    cart.length = 0;
+    updateCart();
+    showSection('products');
+    this.reset();
+    document.getElementById('delivery-time').textContent = deliveryTime;
+  });
+
+</script>
+
+</body>
+</html>
