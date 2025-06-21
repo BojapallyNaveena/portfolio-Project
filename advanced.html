@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title> Advanced Web Features</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f7f7f7;
+    }
+
+    header {
+      background-color: #333;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .container {
+      display: flex;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .section {
+      flex: 1;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    /* Quiz styles */
+    #quiz button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #quiz button:hover {
+      background: #0056b3;
+    }
+
+    /* API Section */
+    #joke {
+      font-style: italic;
+      margin-top: 10px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+
+      body {
+        font-size: 16px;
+      }
+    }
+
+    @media (min-width: 769px) {
+      body {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Responsive Design, Quiz, and API</h1>
+    <p>Advanced Web Development Features</p>
+  </header>
+
+  <div class="container">
+
+    <!-- Interactive Quiz Section -->
+    <div class="section" id="quiz">
+      <h2>JavaScript Quiz</h2>
+      <p id="question">Loading question...</p>
+      <button onclick="checkAnswer(this)">Answer A</button>
+      <button onclick="checkAnswer(this)">Answer B</button>
+      <button onclick="checkAnswer(this)">Answer C</button>
+      <button onclick="checkAnswer(this)">Answer D</button>
+      <p id="quizResult"></p>
+    </div>
+
+    <!-- API Section -->
+    <div class="section">
+      <h2>Get a Random Joke</h2>
+      <button onclick="getJoke()">Tell Me a Joke</button>
+      <p id="joke">Click the button to get a joke!</p>
+    </div>
+
+  </div>
+
+  <script>
+    // ------------------ Quiz Logic -------------------
+    const questions = [
+      {
+        q: "What does HTML stand for?",
+        a: "HyperText Markup Language",
+        options: [
+          "HyperText Markup Language",
+          "HyperTool Machine Language",
+          "HighText Markup Language",
+          "None of the above"
+        ]
+      },
+      {
+        q: "Which language is used for styling web pages?",
+        a: "CSS",
+        options: [
+          "HTML",
+          "JQuery",
+          "CSS",
+          "XML"
+        ]
+      },
+      {
+        q: "Which is not a JavaScript Framework?",
+        a: "Cassandra",
+        options: [
+          "Python Script",
+          "JQuery",
+          "Django",
+          "Cassandra"
+        ]
+      }
+    ];
+
+    let current = 0;
+    let score = 0;
+
+    function loadQuestion() {
+      const q = questions[current];
+      document.getElementById("question").textContent = q.q;
+      const buttons = document.querySelectorAll("#quiz button");
+      buttons.forEach((btn, i) => {
+        btn.textContent = q.options[i];
+      });
+      document.getElementById("quizResult").textContent = "";
+    }
+
+    function checkAnswer(btn) {
+      if (btn.textContent === questions[current].a) {
+        score++;
+      }
+      current++;
+      if (current < questions.length) {
+        loadQuestion();
+      } else {
+        document.getElementById("question").textContent = "Quiz completed!";
+        document.querySelectorAll("#quiz button").forEach(btn => btn.style.display = "none");
+        document.getElementById("quizResult").textContent = `Your score: ${score}/${questions.length}`;
+      }
+    }
+
+    window.onload = loadQuestion;
+
+    // ------------------ Joke API Logic -------------------
+    function getJoke() {
+      fetch("https://official-joke-api.appspot.com/random_joke")
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("joke").textContent = `${data.setup} - ${data.punchline}`;
+        })
+        .catch(() => {
+          document.getElementById("joke").textContent = "Oops! Could not load a joke.";
+        });
+    }
+  </script>
+
+</body>
+</html>
